@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multilingual Music Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #2c2c2c;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .playing-track {
+            animation: pulse 1.5s infinite;
+        }
+        .language-btn.active {
+            background-color: #10b981;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto max-w-md p-4">
+        <div class="mb-4 flex justify-center space-x-2">
+            <button id="langAllBtn" class="language-btn bg-gray-700 px-4 py-2 rounded active">All</button>
+            <button id="langEnglishBtn" class="language-btn bg-gray-700 px-4 py-2 rounded">English</button>
+            <button id="langRussianBtn" class="language-btn bg-gray-700 px-4 py-2 rounded">Russian</button>
+            <button id="langHindiBtn" class="language-btn bg-gray-700 px-4 py-2 rounded">Hindi</button>
+            <button id="langTamilBtn" class="language-btn bg-gray-700 px-4 py-2 rounded">Tamil</button>
+        </div>
+
+        <div class="bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div id="albumArtSection" class="relative h-96 bg-cover bg-center">
+                <div class="absolute top-4 right-4 flex space-x-3">
+                    <button id="likeBtn" class="bg-black/50 p-3 rounded-full hover:bg-black/70 transition">
+                        <i class="far fa-heart text-white"></i>
+                    </button>
+                    <button id="queueBtn" class="bg-black/50 p-3 rounded-full hover:bg-black/70 transition">
+                        <i class="fas fa-list text-white"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <h2 id="trackTitle" class="text-2xl font-bold text-white">Track Title</h2>
+                    <p id="trackArtist" class="text-gray-400 mt-1">Artist Name</p>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalDuration">0:00</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        id="progressBar" 
+                        class="w-full h-1 bg-gray-700 rounded-full appearance-none"
+                        value="0" 
+                        min="0" 
+                        max="100"
+                    >
+                </div>
+
+                <div class="flex justify-center items-center space-x-6 mb-4">
+                    <button id="shuffleBtn" class="text-white hover:text-green-500 transition">
+                        <i class="fas fa-random text-xl"></i>
+                    </button>
+                    <button id="prevBtn" class="text-white hover:text-green-500 transition">
+                        <i class="fas fa-step-backward text-2xl"></i>
+                    </button>
+                    <button id="playPauseBtn" class="bg-green-500 text-white p-4 rounded-full hover:bg-green-600 transition">
+                        <i id="playPauseIcon" class="fas fa-play text-2xl"></i>
+                    </button>
+                    <button id="nextBtn" class="text-white hover:text-green-500 transition">
+                        <i class="fas fa-step-forward text-2xl"></i>
+                    </button>
+                    <button id="repeatBtn" class="text-white hover:text-green-500 transition">
+                        <i class="fas fa-redo text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button id="muteBtn" class="text-white hover:text-green-500 transition">
+                        <i id="volumeIcon" class="fas fa-volume-up text-xl"></i>
+                    </button>
+                    <input 
+                        type="range" 
+                        id="volumeSlider" 
+                        class="w-full h-1 bg-gray-700 rounded-full appearance-none"
+                        min="0" 
+                        max="100" 
+                        value="100"
+                    >
+                </div>
+
+                <audio id="audioPlayer" preload="metadata"></audio>
+            </div>
+
+            <div id="playlistContainer" class="hidden bg-gray-700 max-h-64 overflow-y-auto custom-scrollbar">
+                <div id="playlistContent" class="p-4 space-y-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Expanded Music Library with Language
+        const songs = [
+            // English Songs
+            {
+        title: "Bubble Gum",
+        artist: "Unknown",
+        src: "/eng/Bubble Gum.mp3",
+        albumArt: "/api/placeholder/album1.jpg",
+        language: "English"
+    },
+    {
+        title: "Line Without a Hook",
+        artist: "Unknown",
+        src: "/eng/Line Without a Hook.mp3",
+        albumArt: "/api/placeholder/album2.jpg",
+        language: "English"
+    },
+    {
+        title: "Those Eyes",
+        artist: "Unknown",
+        src: "/eng/Those Eyes.mp3",
+        albumArt: "/api/placeholder/album3.jpg",
+        language: "English"
+    },
+    {
+        title: "Wasted Summers",
+        artist: "Unknown",
+        src: "/eng/Wasted Summers.mp3",
+        albumArt: "/api/placeholder/album4.jpg",
+        language: "English"
+    },
+            // Russian Songs
+
+            {
+        "title": "1000 ночей",
+        "artist": "Unknown",
+        "src": "/rus/1000 ночей.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Lalala",
+        "artist": "Unknown",
+        "src": "/rus/Lalala.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Wow",
+        "artist": "Unknown",
+        "src": "/rus/Wow.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Беги",
+        "artist": "Unknown",
+        "src": "/rus/Беги.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Без боя",
+        "artist": "Unknown",
+        "src": "/rus/Без боя.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Без тебя",
+        "artist": "Unknown",
+        "src": "/rus/Без тебя.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Болен",
+        "artist": "Unknown",
+        "src": "/rus/Болен.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Букеты роз",
+        "artist": "Unknown",
+        "src": "/rus/Букеты роз.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Быть с тобою да",
+        "artist": "Unknown",
+        "src": "/rus/Быть с тобою да.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Вру",
+        "artist": "Unknown",
+        "src": "/rus/Вру.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Всё нормально",
+        "artist": "Unknown",
+        "src": "/rus/Всё нормально.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Говорила мама",
+        "artist": "Unknown",
+        "src": "/rus/Говорила мама.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Грезы",
+        "artist": "Unknown",
+        "src": "/rus/Грезы.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Если ты",
+        "artist": "Unknown",
+        "src": "/rus/Если ты.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+    {
+        "title": "Заберу",
+        "artist": "Unknown",
+        "src": "/rus/Заберу.mp3",
+        "albumArt": "/api/placeholder/album9.jpg",
+        "language": "Russian"
+    },
+
+
+            
+            // Hindi Songs
+            {
+                title: "Maula mera",
+                artist: "",
+                src: "/hin/Maula.mp3",
+                albumArt: "data:image/jpeg;base64,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",
+                duration: "4:20",
+                language: "Hindi"
+            },
+            {
+                title: "प्यार का जादू",
+                artist: "संगीत सितारे",
+                src: "/api/placeholder/song8.mp3",
+                albumArt: "/api/placeholder/album8.jpg",
+                duration: "3:50",
+                language: "Hindi"
+            }
+        ];
+
+        // DOM Elements
+        const audioPlayer = document.getElementById('audioPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalDurationEl = document.getElementById('totalDuration');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const muteBtn = document.getElementById('muteBtn');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const shuffleBtn = document.getElementById('shuffleBtn');
+        const repeatBtn = document.getElementById('repeatBtn');
+        const albumArtSection = document.getElementById('albumArtSection');
+        const trackTitle = document.getElementById('trackTitle');
+        const trackArtist = document.getElementById('trackArtist');
+        const queueBtn = document.getElementById('queueBtn');
+        const playlistContainer = document.getElementById('playlistContainer');
+        const playlistContent = document.getElementById('playlistContent');
+        const likeBtn = document.getElementById('likeBtn');
+
+        // Language Filter Buttons
+        const langAllBtn = document.getElementById('langAllBtn');
+        const langEnglishBtn = document.getElementById('langEnglishBtn');
+        const langRussianBtn = document.getElementById('langRussianBtn');
+        const langHindiBtn = document.getElementById('langHindiBtn');
+        const langTamilBtn = document.getElementById('langTamilBtn');
+
+        // State Variables
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        let isShuffled = false;
+        let isRepeated = false;
+        let currentLanguageFilter = 'All';
+        let filteredSongs = songs;
+
+        // Language Filter Function
+        function filterSongsByLanguage(language) {
+            // Reset active states
+            document.querySelectorAll('.language-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Set active state for clicked button
+            if (language === 'All') {
+                langAllBtn.classList.add('active');
+                filteredSongs = songs;
+            } else {
+                document.getElementById(`lang${language}Btn`).classList.add('active');
+                filteredSongs = songs.filter(song => song.language === language);
+            }
+
+            currentLanguageFilter = language;
+            currentTrackIndex = 0;
+            createPlaylist();
+            loadTrack(0);
+        }
+
+        // Load Track
+        function loadTrack(index) {
+            if (filteredSongs.length === 0) return;
+
+            const track = filteredSongs[index];
+            audioPlayer.src = track.src;
+            trackTitle.textContent = track.title;
+            trackArtist.textContent = track.artist;
+            albumArtSection.style.backgroundImage = `url('${track.albumArt}')`;
+            
+            // Reset progress
+            progressBar.value = 0;
+            currentTimeEl.textContent = '0:00';
+            
+            // Get track duration when metadata is loaded
+            audioPlayer.onloadedmetadata = function() {
+                const duration = audioPlayer.duration;
+                const minutes = Math.floor(duration / 60);
+                const seconds = Math.floor(duration % 60);
+                totalDurationEl.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            };
+        }
+
+        // Play/Pause Toggle
+        function togglePlay() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                playPauseIcon.classList.replace('fa-pause', 'fa-play');
+            } else {
+                audioPlayer.play();
+                playPauseIcon.classList.replace('fa-play', 'fa-pause');
+            }
+            isPlaying = !isPlaying;
+        }
+
+        // Next Track
+        function nextTrack() {
+            if (filteredSongs.length === 0) return;
+
+            currentTrackIndex = isShuffled 
+                ? Math.floor(Math.random() * filteredSongs.length)
+                : (currentTrackIndex + 1) % filteredSongs.length;
+            loadTrack(currentTrackIndex);
+            if (isPlaying) audioPlayer.play();
+        }
+
+        // Previous Track
+        function previousTrack() {
+            if (filteredSongs.length === 0) return;
+
+            currentTrackIndex = (currentTrackIndex - 1 + filteredSongs.length) % filteredSongs.length;
+            loadTrack(currentTrackIndex);
+            if (isPlaying) audioPlayer.play();
+        }
+
+        // Update Progress Bar
+        function updateProgressBar() {
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progressBar.value = progress;
+
+            // Update current time
+            const currentMinutes = Math.floor(audioPlayer.currentTime / 60);
+            const currentSeconds = Math.floor(audioPlayer.currentTime % 60);
+            currentTimeEl.textContent = `${currentMinutes}:${currentSeconds < 10 ? '0' : ''}${currentSeconds}`;
+        }
+
+        // Seek Track
+        function seekTrack() {
+            const seekTime = (progressBar.value / 100) * audioPlayer.duration;
+            audioPlayer.currentTime = seekTime;
+        }
+
+        // Volume Control
+        function setVolume() {
+            audioPlayer.volume = volumeSlider.value / 100;
+            
+            // Update volume icon
+            if (volumeSlider.value == 0) {
+                volumeIcon.classList.replace('fa-volume-up', 'fa-volume-mute');
+            } else if (volumeSlider.value < 50) {
+                volumeIcon.classList.replace('fa-volume-mute', 'fa-volume-down');
+                volumeIcon.classList.replace('fa-volume-up', 'fa-volume-down');
+            } else {
+                volumeIcon.classList.replace('fa-volume-down', 'fa-volume-up');
+                volumeIcon.classList.replace('fa-volume-mute', 'fa-volume-up');
+            }
+        }
+
+        // Mute Toggle
+        function toggleMute() {
+            audioPlayer.muted = !audioPlayer.muted;
+            if (audioPlayer.muted) {
+                volumeIcon.classList.replace('fa-volume-up', 'fa-volume-mute');
+                volumeIcon.classList.replace('fa-volume-down', 'fa-volume-mute');
+            } else {
+                volumeIcon.classList.replace('fa-volume-mute', 'fa-volume-up');
+            }
+        }
+
+        // Create Playlist
+        function createPlaylist() {
+            playlistContent.innerHTML = '';
+            filteredSongs.forEach(function(song, index) {
+                const songElement = document.createElement('div');
+                songElement.classList.add('flex', 'justify-between', 'items-center', 'p-3', 'rounded-lg', 'hover:bg-gray-600', 'cursor-pointer', 'transition');
+                songElement.innerHTML = `
+                    <div>
+                        <h4 class="font-medium text-white">${song.title}</h4>
+                        <p class="text-sm text-gray-400">${song.artist} (${song.language})</p>
+                    </div>
+                    <span class="text-gray-400 text-sm">${song.duration}</span>
+                `;
+                songElement.addEventListener('click', function() {
+                    currentTrackIndex = filteredSongs.indexOf(song);
+                    loadTrack(currentTrackIndex);
+                    if (!isPlaying) togglePlay();
+                });
+                playlistContent.appendChild(songElement);
+            });
+        }
+
+        // Event Listeners
+        playPauseBtn.addEventListener('click', togglePlay);
+        nextBtn.addEventListener('click', nextTrack);
+        prevBtn.addEventListener('click', previousTrack);
+        audioPlayer.addEventListener('timeupdate', updateProgressBar);
+        progressBar.addEventListener('input', seekTrack);
+        volumeSlider.addEventListener('input', setVolume);
+        muteBtn.addEventListener('click', toggleMute);
+        
+        // Language Filter Event Listeners
+        langAllBtn.addEventListener('click', () => filterSongsByLanguage('All'));
+        langEnglishBtn.addEventListener('click', () => filterSongsByLanguage('English'));
+        langRussianBtn.addEventListener('click', () => filterSongsByLanguage('Russain'));
+        langHindiBtn.addEventListener('click', () => filterSongsByLanguage('Hindi'));
+        langTamilBtn.addEventListener('click', () => filterSongsByLanguage('Tami;'));
+        
+        // Shuffle Toggle
+        shuffleBtn.addEventListener('click', function() {
+            isShuffled = !isShuffled;
+            shuffleBtn.classList.toggle('text-green-500');
+        });
+
+        // Repeat Toggle
+        repeatBtn.addEventListener('click', function() {
+            isRepeated = !isRepeated;
+            audioPlayer.loop = isRepeated;
+            repeatBtn.classList.toggle('text-green-500');
+        });
+
+        // Like Button
+        likeBtn.addEventListener('click', function() {
+            likeBtn.querySelector('i').classList.toggle('fas');
+            likeBtn.querySelector('i').classList.toggle('far');
+        });
+
+        // Queue Button
+        queueBtn.addEventListener('click', function() {
+            playlistContainer.classList.toggle('hidden');
+        });
+
+        // Track Ended
+        audioPlayer.addEventListener('ended', function() {
+            if (!isRepeated) {
+                nextTrack();
+            }
+        });
+
+        // Initialize
+        loadTrack(0);
+        createPlaylist();
+    </script>
+</body>
+</html>
